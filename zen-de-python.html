@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Zen de Python — guide interactif</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --accent: #38bdf8;
+    --good: #4ade80;
+    --bad: #f87171;
+    --warn: #fbbf24;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  header {
+    padding: 3rem 1.5rem 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 2.1rem; margin-bottom: .5rem; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); max-width: 700px; margin: 0 auto; }
+  header .egg {
+    display: inline-block;
+    margin-top: 1rem;
+    background: #0b1120;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .6rem 1.2rem;
+    font-family: Consolas, monospace;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  header .egg:hover { border-color: var(--accent); }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .4rem;
+    padding: 1rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  nav button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: .35rem .9rem;
+    font-size: .83rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  nav button:hover { color: var(--text); border-color: var(--accent); }
+  nav button.active { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  section.tab { display: none; animation: fadeIn .3s; }
+  section.tab.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  h2 { color: var(--accent); margin-bottom: 1rem; font-size: 1.5rem; }
+  p.lead { color: var(--muted); margin-bottom: 1.5rem; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .aphorisme-en {
+    font-family: Georgia, serif;
+    font-style: italic;
+    color: var(--warn);
+    font-size: 1.05rem;
+    margin-bottom: .25rem;
+  }
+  .aphorisme-fr { font-size: 1.15rem; font-weight: 700; margin-bottom: .75rem; }
+  .num {
+    display: inline-block;
+    background: rgba(56,189,248,.15);
+    color: var(--accent);
+    width: 1.8rem;
+    height: 1.8rem;
+    line-height: 1.8rem;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    margin-right: .5rem;
+    font-size: .9rem;
+  }
+
+  pre {
+    background: #0b1120;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: .86rem;
+    line-height: 1.55;
+    margin: .75rem 0;
+  }
+  .kw { color: #c084fc; font-weight: 600; } .str { color: #fbbf24; }
+  .fn { color: #38bdf8; } .cm { color: #64748b; font-style: italic; }
+  .num { color: #f472b6; }
+  .bad-line { background: rgba(248,113,113,.12); display: block; border-radius: 4px; }
+  .good-line { background: rgba(74,222,128,.10); display: block; border-radius: 4px; }
+  code.inline {
+    background: #0b1120;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: .1rem .4rem;
+    font-family: Consolas, monospace;
+    font-size: .85em;
+    color: #fbbf24;
+  }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+  .code-box { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .code-box .label {
+    padding: .35rem .8rem;
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .code-box.bad .label { background: #7f1d1d; color: #fecaca; }
+  .code-box.good .label { background: #14532d; color: #bbf7d0; }
+  .code-box pre { border: none; border-radius: 0; margin: 0; }
+
+  .tip {
+    border-left: 4px solid var(--warn);
+    background: rgba(251,191,36,.08);
+    padding: .9rem 1.1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+    font-size: .95rem;
+  }
+  .tip b { color: var(--warn); }
+
+  .zen-full {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 1.02rem;
+    line-height: 2;
+  }
+  .zen-full div { padding: .15rem .5rem; border-radius: 6px; cursor: pointer; transition: background .15s; }
+  .zen-full div:hover { background: rgba(56,189,248,.1); }
+
+  footer { text-align: center; color: var(--muted); padding: 2rem; border-top: 1px solid var(--border); font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧘 Le <span>Zen de Python</span></h1>
+  <p>Les 19 principes qui guident l'écriture d'un code Python élégant — la PEP 20, expliquée avec des exemples. Cliquez sur un aphorisme ci-dessous.</p>
+  <div class="egg" id="egg" title="Cliquez !">&gt;&gt;&gt; import this</div>
+</header>
+
+<nav id="nav"></nav>
+
+<main>
+  <section id="intro" class="tab active">
+    <h2>Qu'est-ce que le Zen de Python ?</h2>
+    <p class="lead">Le Zen de Python (PEP 20, écrit par Tim Peters en 1999) est un ensemble de 19 aphorismes qui résument la philosophie du langage. Il est caché dans Python lui-même : tapez <code class="inline">import this</code> dans un interpréteur. Cliquez sur l'œuf ci-dessus pour le voir apparaître !</p>
+
+    <div class="card">
+      <h3>📜 Le texte intégral</h3>
+      <div class="zen-full" id="zen-full"></div>
+      <p style="color:var(--muted);margin-top:.75rem;font-size:.85rem">💡 Cliquez sur une ligne pour ouvrir directement son explication détaillée.</p>
+    </div>
+
+    <div class="card">
+      <h3>🐍 Comment l'afficher dans Python ?</h3>
+      <pre><span class="fn">&gt;&gt;&gt;</span> <span class="kw">import</span> this
+The Zen of Python, by Tim Peters
+
+Beautiful is better than ugly.
+Explicit is better than implicit.
+...</pre>
+      <p>C'est un <b>easter egg</b> officiel : le module <code class="inline">this</code> affiche le texte via un encodage rot13 (le fichier <code class="inline">this.py</code> de la stdlib est lui-même un exemple de code… pas très zen !).</p>
+    </div>
+  </section>
+
+  <div id="aphorisms"></div>
+</main>
+
+<footer>
+  Le Zen de Python (PEP 20) — Tim Peters, 1999 · Guide interactif · « Readability counts. »
+</footer>
+
+<script>
+const aphorisms = [
+  {
+    en: "Beautiful is better than ugly.",
+    fr: "Le beau vaut mieux que le laid.",
+    explain: "Le code est lu bien plus souvent qu'il n'est écrit. Un code soigné — noms clairs, mise en page aérée, logique limpide — est un code que l'on maintient avec plaisir.",
+    bad: `<span class="kw">def</span> <span class="fn">f</span>(a,b,c,d,e): <span class="kw">return</span> a*b*c*d*e\
+<span class="kw">x</span>=f(<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>,<span class="num">4</span>,<span class="num">5</span>)`,
+    good: `<span class="kw">def</span> <span class="fn">produit</span>(facteurs: <span class="fn">list</span>[<span class="fn">float</span>]) -&gt; <span class="fn">float</span>:
+    <span class="str">"""Multiplie tous les facteurs entre eux."""</span>
+    <span class="kw">return</span> math.prod(facteurs)
+
+resultat = produit([<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>])`
+  },
+  {
+    en: "Explicit is better than implicit.",
+    fr: "L'explicite vaut mieux que l'implicite.",
+    explain: "Mieux vaut écrire clairement ce qui se passe que de compter sur des comportements cachés ou des « magies ». Le lecteur ne doit jamais deviner.",
+    bad: `<span class="kw">def</span> <span class="fn">envoyer</span>(dest):            <span class="cm"># implicitement : un email ? un SMS ?</span>
+    service.send(dest)          <span class="cm"># et vers quel service ?</span>`,
+    good: `<span class="kw">def</span> <span class="fn">envoyer_email</span>(adresse_email: <span class="fn">str</span>) -&gt; <span class="fn">None</span>:
+    <span class="str">"""Envoie un email de confirmation via le service SMTP."""</span>
+    smtp.send(to=adresse_email)`
+  },
+  {
+    en: "Simple is better than complex.",
+    fr: "Le simple vaut mieux que le complexe.",
+    explain: "Si deux solutions marchent, choisissez la plus simple. La complexité est une dette : chaque niveau d'imbrication, chaque design pattern superflu coûte cher à lire et à déboguer.",
+    bad: `<span class="cm"># Usine à gaz pour dire bonjour</span>
+<span class="kw">class</span> <span class="fn">AbstractGreeterFactory</span>: ...
+<span class="kw">class</span> <span class="fn">GreeterImpl</span>(AbstractGreeterFactory): ...`,
+    good: `<span class="kw">def</span> <span class="fn">dire_bonjour</span>(nom: <span class="fn">str</span>) -&gt; <span class="fn">str</span>:
+    <span class="kw">return</span> <span class="str">f"Bonjour {nom} !"</span>`
+  },
+  {
+    en: "Complex is better than complicated.",
+    fr: "Le complexe vaut mieux que le compliqué.",
+    explain: "Nuance subtile : parfois un problème EST complexe (beaucoup de pièces qui s'articulent — complexe) ; c'est acceptable si chaque pièce reste claire. Le <b>compliqué</b>, lui, est artificiellement intriqué, obscur, sans nécessité.",
+    bad: `<span class="cm"># Compliqué : tout est entrelacé, effets de bord cachés</span>
+<span class="kw">global</span> _cache, _mode
+<span class="kw">def</span> <span class="fn">traiter</span>(d): <span class="cm"># modifie _cache, _mode, et d au passage…</span>`,
+    good: `<span class="cm"># Complexe mais clair : plusieurs modules, chacun simple</span>
+<span class="kw">class</span> <span class="fn">Pipeline</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, etapes: <span class="fn">list</span>[Callable]): ...
+    <span class="kw">def</span> <span class="fn">executer</span>(self, donnees): ...`
+  },
+  {
+    en: "Flat is better than nested.",
+    fr: "Le plat vaut mieux que le imbriqué.",
+    explain: "Préférez les structures plates aux imbrications profondes. Les conditions « garde » (retour anticipé) aplatissent le code ; trop d'imbrication = trop de chemins à suivre en tête.",
+    bad: `<span class="kw">def</span> <span class="fn">valider</span>(user):
+    <span class="kw">if</span> user <span class="kw">is not</span> <span class="fn">None</span>:
+        <span class="kw">if</span> user.actif:
+            <span class="kw">if</span> user.age &gt;= <span class="num">18</span>:
+                <span class="kw">return</span> <span class="fn">True</span>
+    <span class="kw">return</span> <span class="fn">False</span>`,
+    good: `<span class="kw">def</span> <span class="fn">valider</span>(user) -&gt; <span class="fn">bool</span>:
+    <span class="kw">if</span> user <span class="kw">is</span> <span class="fn">None</span>:
+        <span class="kw">return</span> <span class="fn">False</span>          <span class="cm"># garde : sortie anticipée</span>
+    <span class="kw">if not</span> user.actif:
+        <span class="kw">return</span> <span class="fn">False</span>
+    <span class="kw">return</span> user.age &gt;= <span class="num">18</span>`
+  },
+  {
+    en: "Sparse is better than dense.",
+    fr: "L'aéré vaut mieux que le compact.",
+    explain: "Ne tassez pas tout sur une ligne pour « gagner de la place ». Les espaces, les lignes vides et les retours à la ligne aident l'œil à regrouper les idées.",
+    bad: `<span class="kw">def</span> <span class="fn">stats</span>(l): m=sum(l)/len(l); v=sum((x-m)**<span class="num">2</span> <span class="kw">for</span> x <span class="kw">in</span> l)/len(l); <span class="kw">return</span> m,v`,
+    good: `<span class="kw">import</span> statistics
+
+<span class="kw">def</span> <span class="fn">stats</span>(valeurs: <span class="fn">list</span>[<span class="fn">float</span>]) -&gt; <span class="fn">tuple</span>[<span class="fn">float</span>, <span class="fn">float</span>]:
+    <span class="str">"""Retourne (moyenne, variance) des valeurs."""</span>
+    moyenne = statistics.fmean(valeurs)
+    variance = statistics.variance(valeurs)
+    <span class="kw">return</span> moyenne, variance`
+  },
+  {
+    en: "Readability counts.",
+    fr: "La lisibilité compte.",
+    explain: "L'aphorisme le plus cité ! Python a été conçu pour être lu par des humains. Noms explicites, PEP 8, docstrings : tout ce qui aide le lecteur est un investissement rentable.",
+    bad: `<span class="kw">def</span> <span class="fn">p</span>(l, t=<span class="num">0.2</span>): <span class="kw">return</span> [x*(<span class="num">1</span>+t) <span class="kw">for</span> x <span class="kw">in</span> l]`,
+    good: `<span class="kw">def</span> <span class="fn">ajouter_tva</span>(prix_ht: <span class="fn">list</span>[<span class="fn">float</span>],
+                 taux_tva: <span class="fn">float</span> = <span class="num">0.20</span>) -&gt; <span class="fn">list</span>[<span class="fn">float</span>]:
+    <span class="str">"""Retourne les prix TTC à partir des prix HT."""</span>
+    <span class="kw">return</span> [prix * (<span class="num">1</span> + taux_tva) <span class="kw">for</span> prix <span class="kw">in</span> prix_ht]`
+  },
+  {
+    en: "Special cases aren't special enough to break the rules.",
+    fr: "Les cas particuliers ne sont pas assez spéciaux pour enfreindre les règles.",
+    explain: "Même « juste cette fois », on respecte les conventions du projet. Chaque exception aux règles crée une incohérence que le lecteur devra mémoriser — et bientôt, plus de règles du tout.",
+    bad: `<span class="cm"># Partout : snake_case, sauf cette classe « spéciale »…</span>
+<span class="kw">class</span> <span class="fn">userManager</span>: ...        <span class="cm"># casse mélangée = incohérence</span>`,
+    good: `<span class="cm"># Une règle pour tous : les classes en PascalCase</span>
+<span class="kw">class</span> <span class="fn">UserManager</span>: ...
+
+<span class="cm"># Si un cas mérite VRAIEMENT un traitement différent,</span>
+<span class="cm"># documentez-le explicitement plutôt que de tricher en silence.</span>`
+  },
+  {
+    en: "Although practicality beats purity.",
+    fr: "Bien que l'aspect pratique bat la pureté.",
+    explain: "La suite logique du précédent : la théorie cède devant la réalité. Un code « pur » mais inutilisable est un échec. Si un cas particulier force une entorse propre, documentée et mesurée — assumez-la.",
+    bad: `<span class="cm"># Purisme absurde : refuser toute lib externe</span>
+<span class="cm"># et réécrire un parseur JSON « pour le principe »</span>`,
+    good: `<span class="cm"># Pragmatique : la stdlib propose json, on l'utilise</span>
+<span class="kw">import</span> json
+data = json.loads(raw)`
+  },
+  {
+    en: "Errors should never pass silently.",
+    fr: "Les erreurs ne devraient jamais passer en silence.",
+    explain: "Un <code class='inline'>except: pass</code> qui avale une erreur est une bombe à retardement : le bug est toujours là, simplement invisible. Loggez, relancez, échouez fort et tôt.",
+    bad: `<span class="kw">try</span>:
+    data = json.loads(raw)
+<span class="kw">except</span>:
+    <span class="kw">pass</span>   <span class="cm"># silence radio… le bug vit sa vie</span>`,
+    good: `<span class="kw">try</span>:
+    data = json.loads(raw)
+<span class="kw">except</span> json.JSONDecodeError <span class="kw">as</span> exc:
+    logger.error(<span class="str">"JSON invalide : %s"</span>, exc)
+    <span class="kw">raise</span>   <span class="cm"># on relance : l'erreur reste visible</span>`
+  },
+  {
+    en: "Unless explicitly silenced.",
+    fr: "À moins d'être explicitement réduites au silence.",
+    explain: "Étouffer une erreur peut être légitime — si c'est <b>volontaire, ciblé et visible</b>. Un commentaire « pourquoi » transforme un choix douteux en décision documentée.",
+    bad: `<span class="kw">except</span> <span class="fn">OSError</span>: <span class="kw">pass</span>   <span class="cm"># pourquoi ? mystère…</span>`,
+    good: `<span class="kw">try</span>:
+    os.remove(fichier_tmp)
+<span class="kw">except</span> <span class="fn">FileNotFoundError</span>:
+    <span class="kw">pass</span>   <span class="cm"># déjà supprimé : cas attendu, rien à faire</span>`
+  },
+  {
+    en: "In the face of ambiguity, refuse the temptation to guess.",
+    fr: "Face à l'ambiguïté, refusez la tentation de deviner.",
+    explain: "Une entrée ambiguë ? Ne choisissez pas silencieusement une interprétation : échouez avec un message clair, ou demandez. Un <code class='inline'>ValueError</code> vaut mieux qu'un résultat faux.",
+    bad: `<span class="kw">def</span> <span class="fn">parse_date</span>(s):
+    <span class="kw">return</span> s.split(<span class="str">"/"</span>)   <span class="cm"># 01/02/2024 → jour/mois ou mois/jour ?</span>`,
+    good: `<span class="kw">def</span> <span class="fn">parse_date</span>(s: <span class="fn">str</span>) -&gt; <span class="fn">date</span>:
+    <span class="kw">try</span>:
+        <span class="kw">return</span> datetime.strptime(s, <span class="str">"%d/%m/%Y"</span>).date()
+    <span class="kw">except</span> <span class="fn">ValueError</span> <span class="kw">as</span> exc:
+        <span class="kw">raise</span> <span class="fn">ValueError</span>(<span class="str">f"Date invalide (attendu JJ/MM/AAAA) : {s!r}"</span>) <span class="kw">from</span> exc`
+  },
+  {
+    en: "There should be one—and preferably only one—obvious way to do it.",
+    fr: "Il devrait y avoir une — et idéalement une seule — façon évidente de le faire.",
+    explain: "Contrairement à Perl (« plus d'une façon de le faire »), Python cultive l'<b>idiome</b> : une manière canonique, reconnue par tous. Cela rend le code des autres immédiatement familier.",
+    bad: `<span class="cm"># Trois styles différents dans le même fichier…</span>
+resultat = []
+<span class="kw">for</span> x <span class="kw">in</span> data: resultat.append(x * <span class="num">2</span>)
+<span class="kw">print</span> <span class="str">"{}"</span>.format(resultat[<span class="num">0</span>])
+<span class="kw">print</span>(resultat[<span class="num">1</span>], <span class="str">""</span>)`,
+    good: `<span class="cm"># L'idiome : compréhension de liste + f-string</span>
+resultat = [x * <span class="num">2</span> <span class="kw">for</span> x <span class="kw">in</span> data]
+<span class="kw">print</span>(<span class="str">f"Premier : {resultat[0]}"</span>)`
+  },
+  {
+    en: "Although that way may not be obvious at first unless you're Dutch.",
+    fr: "Bien que cette façon puisse ne pas être évidente au premier abord, à moins d'être néerlandais.",
+    explain: "Clin d'œil affectueux à Guido van Rossum, le créateur néerlandais de Python : la « voie évidente » découle de sa vision… et devient naturelle avec la pratique. Humour typique de la communauté !",
+    bad: `<span class="cm"># Rien à illustrer : c'est une blague gentille 😉</span>`,
+    good: `<span class="cm"># La preuve : après quelques mois de Python, les idiomes</span>
+<span class="cm"># qui semblaient étranges deviennent vos réflexes…</span>
+<span class="fn"> Counter</span>(mots).most_common(<span class="num">3</span>)`
+  },
+  {
+    en: "Now is better than never.",
+    fr: "Maintenant vaut mieux que jamais.",
+    explain: "L'anti-procrastination du code : livrer, tester, documenter <b>aujourd'hui</b>, même imparfaitement, vaut mieux qu'un perfectionnisme éternel. Un test écrit maintenant protège déjà.",
+    bad: `<span class="cm"># TODO : écrire les tests… un jour. (TODO vieux de 3 ans)</span>
+<span class="cm"># TODO : finir la doc « quand j'aurai le temps »</span>`,
+    good: `<span class="kw">def</span> <span class="fn">test_recherche_vide</span>():      <span class="cm"># écrit en 2 minutes, MAINTENANT</span>
+    <span class="kw">assert</span> rechercher([], <span class="str">"x"</span>) == []`
+  },
+  {
+    en: "Although never is often better than *right* now.",
+    fr: "Bien que jamais vaut souvent mieux que *tout de suite*.",
+    explain: "Contrepoint du précédent : se précipiter sans réfléchir produit du code à jeter. « Maintenant » oui — mais après avoir compris le besoin. Une bonne décision lente bat une mauvaise rapide.",
+    bad: `<span class="cm"># « Vite, il faut une TODO list ! »</span>
+<span class="cm"># → 3e framework réécrit en prod, 0 test, dette énorme</span>`,
+    good: `<span class="cm"># On prend 10 minutes : besoin réel ? format ?并发 ?</span>
+<span class="cm"># Puis on code la version simple, testée, livrée aujourd'hui.</span>`
+  },
+  {
+    en: "If the implementation is hard to explain, it's a bad idea.",
+    fr: "Si l'implémentation est difficile à expliquer, c'est une mauvaise idée.",
+    explain: "Le test ultime : pouvez-vous expliquer votre code en une phrase à un collègue ? Si non, le problème n'est pas le collègue — c'est le design. Simplifiez avant d'expliquer mieux.",
+    bad: `<span class="kw">def</span> <span class="fn">traiter</span>(d):
+    <span class="cm"># « Bon alors en fait ça dépend de _mode, sauf si le cache…</span>
+    <span class="cm">#  attends, je te fais un schéma ? »</span>`,
+    good: `<span class="cm"># « Je valide les données, puis je les enregistre. »</span>
+<span class="kw">def</span> <span class="fn">enregistrer</span>(donnees):
+    valider(donnees)
+    repo.save(donnees)`
+  },
+  {
+    en: "If the implementation is easy to explain, it may be a good idea.",
+    fr: "Si l'implémentation est facile à expliquer, c'est peut-être une bonne idée.",
+    explain: "Notez le « peut-être » : expliquer facilement est <b>nécessaire</b> mais pas <b>suffisant</b>. Un design limpide peut quand même être faux, lent ou incomplet — d'où les tests !",
+    bad: `<span class="cm"># Simple à expliquer… mais faux :</span>
+<span class="cm"># « je divise par la moyenne » (division par 0 si liste vide !)</span>
+<span class="kw">return</span> total / moyenne(liste)`,
+    good: `<span class="cm"># Simple ET vérifié : les tests confirment l'intuition</span>
+<span class="kw">def</span> <span class="fn">ratio</span>(total: <span class="fn">float</span>, base: <span class="fn">float</span>) -&gt; <span class="fn">float</span>:
+    <span class="kw">if</span> base == <span class="num">0</span>:
+        <span class="kw">raise</span> <span class="fn">ValueError</span>(<span class="str">"La base ne peut pas être nulle"</span>)
+    <span class="kw">return</span> total / base`
+  },
+  {
+    en: "Namespaces are one honking great idea — let's do more of those!",
+    fr: "Les espaces de noms sont une excellente idée — faisons-en plus !",
+    explain: "Le grand final ! Espaces de noms = modules, packages, classes, fonctions : chacun son périmètre de noms. Ils évitent les collisions et rendent l'origine d'un nom explicite (<code class='inline'>math.sqrt</code> vs <code class='inline'>numpy.sqrt</code>).",
+    bad: `<span class="cm"># Pollue l'espace de noms : d'où vient sqrt ? pi ?</span>
+<span class="kw">from</span> math <span class="kw">import</span> *
+<span class="kw">from</span> numpy <span class="kw">import</span> *
+resultat = sqrt(<span class="num">4</span>)   <span class="cm"># math ou numpy ? ambigu !</span>`,
+    good: `<span class="kw">import</span> math
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+precision = math.sqrt(<span class="num">4</span>)     <span class="cm"># origine explicite</span>
+matrice = np.sqrt([[<span class="num">1</span>, <span class="num">4</span>]])    <span class="cm"># pas de collision</span>`
+  }
+];
+
+// ---------- Construire la navigation ----------
+const nav = document.getElementById("nav");
+const introBtn = document.createElement("button");
+introBtn.textContent = "🏠 Introduction";
+introBtn.dataset.tab = "intro";
+introBtn.classList.add("active");
+nav.appendChild(introBtn);
+
+const container = document.getElementById("aphorisms");
+aphorisms.forEach((a, i) => {
+  const btn = document.createElement("button");
+  const words = a.en.replace(/[.*!,—]/g, "").split(/\s+/);
+  btn.textContent = `${i + 1}. ` + words.slice(0, 3).join(" ") + "…";
+  btn.dataset.tab = "aph-" + i;
+  nav.appendChild(btn);
+
+  const sec = document.createElement("section");
+  sec.className = "tab";
+  sec.id = "aph-" + i;
+  sec.innerHTML = `
+    <h2><span class="num">${i + 1}</span>Aphorisme ${i + 1} / 19</h2>
+    <p class="aphorisme-en">“${a.en}”</p>
+    <p class="aphorisme-fr">${a.fr}</p>
+    <div class="card">
+      <p>${a.explain}</p>
+    </div>
+    <div class="compare">
+      <div class="code-box bad"><div class="label">❌ À éviter</div><pre>${a.bad}</pre></div>
+      <div class="code-box good"><div class="label">✅ Plus zen</div><pre>${a.good}</pre></div>
+    </div>
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+      <button class="nav-jump" data-target="${i - 1}" style="background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:.45rem 1rem;cursor:pointer;">← Précédent</button>
+      <button class="nav-jump" data-target="${i + 1}" style="background:var(--accent);color:#0f172a;border:none;border-radius:8px;padding:.45rem 1rem;font-weight:600;cursor:pointer;">Suivant →</button>
+    </div>
+  `;
+  container.appendChild(sec);
+});
+
+// ---------- Navigation par onglets ----------
+function openTab(tabId) {
+  document.querySelectorAll("nav button").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === tabId));
+  document.querySelectorAll("section.tab").forEach(s =>
+    s.classList.toggle("active", s.id === tabId));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+nav.addEventListener("click", e => {
+  if (e.target.tagName === "BUTTON") openTab(e.target.dataset.tab);
+});
+container.addEventListener("click", e => {
+  const btn = e.target.closest(".nav-jump");
+  if (!btn) return;
+  const t = parseInt(btn.dataset.target, 10);
+  if (t >= 0 && t < aphorisms.length) openTab("aph-" + t);
+  else if (t < 0) openTab("intro");
+});
+
+// ---------- Texte intégral cliquable ----------
+const zenFull = document.getElementById("zen-full");
+aphorisms.forEach((a, i) => {
+  const line = document.createElement("div");
+  line.innerHTML = `<span style="color:var(--accent);font-style:normal;font-family:Consolas,monospace;font-size:.8rem;margin-right:.7rem;">${String(i + 1).padStart(2, "0")}</span>${a.en}`;
+  line.addEventListener("click", () => openTab("aph-" + i));
+  zenFull.appendChild(line);
+});
+
+// ---------- Easter egg ----------
+const egg = document.getElementById("egg");
+let eggCount = 0;
+egg.addEventListener("click", () => {
+  eggCount++;
+  if (eggCount === 1) {
+    egg.textContent = "The Zen of Python, by Tim Peters 🐍";
+    egg.title = "Import this…";
+  } else {
+    openTab("intro");
+    document.getElementById("zen-full").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+});
+</script>
+</body>
+</html>
