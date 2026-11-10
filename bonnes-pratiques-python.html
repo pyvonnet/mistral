@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bonnes pratiques Python</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --accent: #38bdf8;
+    --good: #4ade80;
+    --bad: #f87171;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 3rem 1.5rem 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 2.2rem; margin-bottom: .5rem; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .5rem;
+    padding: 1rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  nav button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem 1.1rem;
+    font-size: .95rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  nav button:hover { color: var(--text); border-color: var(--accent); }
+  nav button.active { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  section.tab { display: none; animation: fadeIn .3s; }
+  section.tab.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  h2 { color: var(--accent); margin-bottom: 1rem; font-size: 1.5rem; }
+  h3 { margin: 1.5rem 0 .75rem; color: var(--text); }
+  p.lead { color: var(--muted); margin-bottom: 1.5rem; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Comparateur */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+  .code-box { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .code-box .label {
+    padding: .4rem .8rem;
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .code-box.bad .label { background: #7f1d1d; color: #fecaca; }
+  .code-box.good .label { background: #14532d; color: #bbf7d0; }
+  pre {
+    background: #0b1120;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: .85rem;
+    line-height: 1.5;
+  }
+  .kw { color: #c084fc; } .str { color: #fbbf24; } .fn { color: #38bdf8; }
+  .cm { color: #64748b; font-style: italic; } .num { color: #f472b6; }
+
+  .toggle-hint { text-align: center; margin-top: .75rem; color: var(--muted); font-size: .85rem; }
+  .rule-tag {
+    display: inline-block;
+    background: rgba(56,189,248,.15);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: .15rem .7rem;
+    font-size: .78rem;
+    margin-bottom: .6rem;
+  }
+
+  /* Liste PEP 8 */
+  ul.clean { list-style: none; }
+  ul.clean li {
+    padding: .6rem 0 .6rem 1.8rem;
+    border-bottom: 1px dashed var(--border);
+    position: relative;
+  }
+  ul.clean li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 700; }
+  ul.clean li b { color: var(--accent); }
+  code.inline {
+    background: #0b1120;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: .1rem .4rem;
+    font-family: Consolas, monospace;
+    font-size: .85em;
+    color: #fbbf24;
+  }
+
+  /* Quiz */
+  .quiz-q { margin-bottom: 1.5rem; }
+  .quiz-q .question { font-weight: 600; margin-bottom: .75rem; }
+  .quiz-q button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #0b1120;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .6rem .9rem;
+    margin-bottom: .5rem;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .quiz-q button:hover { border-color: var(--accent); }
+  .quiz-q button.correct { border-color: var(--good); background: rgba(74,222,128,.12); }
+  .quiz-q button.wrong { border-color: var(--bad); background: rgba(248,113,113,.12); }
+  .quiz-q .explain {
+    display: none;
+    margin-top: .5rem;
+    font-size: .9rem;
+    color: var(--muted);
+    border-left: 3px solid var(--accent);
+    padding-left: .75rem;
+  }
+  .quiz-q .explain.show { display: block; }
+  #score {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    font-size: 1.1rem;
+  }
+  #score span { color: var(--accent); font-weight: 700; }
+
+  details { margin-bottom: 1rem; }
+  details summary {
+    cursor: pointer;
+    padding: .8rem 1rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-weight: 600;
+    list-style: none;
+  }
+  details summary::before { content: "▸ "; color: var(--accent); }
+  details[open] summary::before { content: "▾ "; }
+  details .card { margin-top: .75rem; }
+
+  footer { text-align: center; color: var(--muted); padding: 2rem; border-top: 1px solid var(--border); font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐍 Bonnes pratiques <span>Python</span></h1>
+  <p>Un guide interactif : comparez du code mauvais et bon, explorez la PEP 8 et testez vos connaissances avec un quiz.</p>
+</header>
+
+<nav>
+  <button data-tab="compare" class="active">⚖️ Mauvais vs Bon</button>
+  <button data-tab="pep8">📐 PEP 8</button>
+  <button data-tab="structure">🏗️ Structure &amp; Outillage</button>
+  <button data-tab="quiz">🎯 Quiz</button>
+</nav>
+
+<main>
+
+<!-- ==================== ONGLET COMPARE ==================== -->
+<section id="compare" class="tab active">
+  <h2>Mauvais vs Bon</h2>
+  <p class="lead">Cliquez sur un thème ci-dessous pour révéler la comparaison.</p>
+
+  <details>
+    <summary>Nommage clair et explicite</summary>
+    <div class="card">
+      <span class="rule-tag">Lisibilité</span>
+      <div class="compare">
+        <div class="code-box bad"><div class="label">❌ Mauvais</div>
+<pre><span class="kw">def</span> <span class="fn">calc</span>(x, y):
+    <span class="kw">return</span> x * <span class="num">0.20</span> + y</pre></div>
+        <div class="code-box good"><div class="label">✅ Bon</div>
+<pre><span class="kw">def</span> <span class="fn">calculer_prix_ttc</span>(prix_ht, taux_tva=<span class="num">0.20</span>):
+    <span class="str">"""Retourne le prix TTC à partir du HT et du taux de TVA."""</span>
+    <span class="kw">return</span> prix_ht * taux_tva + prix_ht</pre></div>
+      </div>
+      <p class="toggle-hint">Les noms explicites + docstring rendent le code auto-documenté.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Éviter les types non annotés</summary>
+    <div class="card">
+      <span class="rule-tag">Typage statique</span>
+      <div class="compare">
+        <div class="code-box bad"><div class="label">❌ Mauvais</div>
+<pre><span class="kw">def</span> <span class="fn">moyenne</span>(notes):
+    <span class="kw">return</span> sum(notes) / len(notes)</pre></div>
+        <div class="code-box good"><div class="label">✅ Bon</div>
+<pre><span class="kw">from</span> statistics <span class="kw">import</span> fmean
+
+<span class="kw">def</span> <span class="fn">moyenne</span>(notes: <span class="fn">list</span>[<span class="fn">float</span>]) -&gt; <span class="fn">float</span>:
+    <span class="str">"""Calcule la moyenne arithmétique des notes."""</span>
+    <span class="kw">if not</span> notes:
+        <span class="kw">raise</span> <span class="fn">ValueError</span>(<span class="str">"La liste ne peut pas être vide"</span>)
+    <span class="kw">return</span> fmean(notes)</pre></div>
+      </div>
+      <p class="toggle-hint">Les annotations aident les IDE, mypy et vos collègues.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Gestion des erreurs : pas d'except nu</summary>
+    <div class="card">
+      <span class="rule-tag">Robustesse</span>
+      <div class="compare">
+        <div class="code-box bad"><div class="label">❌ Mauvais</div>
+<pre><span class="kw">try</span>:
+    data = json.loads(raw)
+<span class="kw">except</span>:
+    <span class="kw">pass</span>  <span class="cm"># avale TOUTES les erreurs, même le Ctrl+C !</span></pre></div>
+        <div class="code-box good"><div class="label">✅ Bon</div>
+<pre><span class="kw">try</span>:
+    data = json.loads(raw)
+<span class="kw">except</span> <span class="fn">json.JSONDecodeError</span> <span class="kw">as</span> exc:
+    <span class="fn">logger</span>(<span class="str">"JSON invalide: %s"</span>, exc)
+    <span class="kw">raise</span></pre></div>
+      </div>
+      <p class="toggle-hint">Attrapez des exceptions précises, loggez, et ne masquez jamais silencieusement.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Compréhensions de liste vs boucle manuelle</summary>
+    <div class="card">
+      <span class="rule-tag">Pythonic</span>
+      <div class="compare">
+        <div class="code-box bad"><div class="label">❌ Mauvais</div>
+<pre>resultat = []
+<span class="kw">for</span> nom <span class="kw">in</span> noms:
+    <span class="kw">if</span> nom:
+        resultat.append(nom.strip().lower())</pre></div>
+        <div class="code-box good"><div class="label">✅ Bon</div>
+<pre>resultat = [nom.strip().lower()
+            <span class="kw">for</span> nom <span class="kw">in</span> noms
+            <span class="kw">if</span> nom]</pre></div>
+      </div>
+      <p class="toggle-hint">Plus concis et souvent plus rapide. Générateurs (<code class="inline">(x for x in ...)</code>) pour les gros volumes.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Éviter les valeurs magiques et les globals</summary>
+    <div class="card">
+      <span class="rule-tag">Maintenabilité</span>
+      <div class="compare">
+        <div class="code-box bad"><div class="label">❌ Mauvais</div>
+<pre>total = prix * <span class="num">1.20</span>  <span class="cm"># 1.20 ? pourquoi ?</span>
+compteur = <span class="num">0</span>  <span class="cm"># variable globale modifiée partout</span></pre></div>
+        <div class="code-box good"><div class="label">✅ Bon</div>
+<pre><span class="fn">TAUX_TVA</span> = <span class="num">0.20</span>  <span class="cm"># constante nommée</span>
+
+<span class="kw">def</span> <span class="fn">calculer_total</span>(prix: <span class="fn">float</span>) -&gt; <span class="fn">float</span>:
+    <span class="kw">return</span> prix * (<span class="num">1</span> + <span class="fn">TAUX_TVA</span>)</pre></div>
+      </div>
+      <p class="toggle-hint">Constantes en MAJUSCULES, fonctions pures sans état global.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Comparaisons et vérité Pythoniques</summary>
+    <div class="card">
+      <span class="rule-tag">Idiomes</span>
+      <div class="compare">
+        <div class="code-box bad"><div class="label">❌ Mauvais</div>
+<pre><span class="kw">if</span> len(ma_liste) &gt; <span class="num">0</span>: ...
+<span class="kw">if</span> est_actif == <span class="fn">True</span>: ...
+<span class="kw">if</span> x != <span class="fn">None</span>: ...</pre></div>
+        <div class="code-box good"><div class="label">✅ Bon</div>
+<pre><span class="kw">if</span> ma_liste: ...
+<span class="kw">if</span> est_actif: ...
+<span class="kw">if</span> x <span class="kw">is not</span> <span class="fn">None</span>: ...</pre></div>
+      </div>
+      <p class="toggle-hint">Une liste vide est « fausse » ; <code class="inline">None</code> se compare avec <code class="inline">is</code> (identité).</p>
+    </div>
+  </details>
+</section>
+
+<!-- ==================== ONGLET PEP 8 ==================== -->
+<section id="pep8" class="tab">
+  <h2>PEP 8 — Les règles essentielles</h2>
+  <p class="lead">La PEP 8 est le guide de style officiel de Python. Les points à retenir :</p>
+
+  <div class="card">
+    <h3>🔤 Nommage</h3>
+    <ul class="clean">
+      <li><b>Variables / fonctions</b> : <code class="inline">snake_case</code> — <code class="inline">ma_fonction()</code></li>
+      <li><b>Classes</b> : <code class="inline">PascalCase</code> — <code class="inline">class GestionnaireUtilisateur:</code></li>
+      <li><b>Constantes</b> : <code class="inline">MAJUSCULES</code> — <code class="inline">VITESSE_MAX = 300</code></li>
+      <li><b>Privé (convention)</b> : préfixe underscore — <code class="inline">_interne</code>, <code class="inline">__tres_prive</code></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>📐 Espaces et mise en page</h3>
+    <ul class="clean">
+      <li>Indentation : <b>4 espaces</b>, jamais de tabulation mélangée</li>
+      <li>Longueur de ligne : <b>79 caractères max</b> (souvent 88–100 par convention d'équipe)</li>
+      <li>Deux lignes vides autour des définitions de fonctions / classes de haut niveau</li>
+      <li>Espaces autour des opérateurs : <code class="inline">x = a + b</code>, mais pas dans les mots-clés d'arguments : <code class="inline">f(x=1)</code></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>📦 Imports</h3>
+    <ul class="clean">
+      <li>Un import par ligne, en haut du fichier</li>
+      <li>Ordre : <b>stdlib</b> → <b>tierce partie</b> → <b>local</b>, séparés par une ligne vide</li>
+      <li>Éviter <code class="inline">from module import *</code> (pollue l'espace de noms)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>💬 Documentation</h3>
+    <ul class="clean">
+      <li>Docstring pour chaque module, classe et fonction publique (PEP 257)</li>
+      <li>Préférer les docstrings au commentaires qui expliquent le « quoi » ; les commentaires expliquent le « pourquoi »</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== ONGLET STRUCTURE ==================== -->
+<section id="structure" class="tab">
+  <h2>Structure de projet &amp; outillage</h2>
+  <p class="lead">Au-delà du style, un projet Python sain repose sur une structure claire et des outils automatisés.</p>
+
+  <div class="card">
+    <h3>🗂️ Arborescence recommandée</h3>
+<pre><span class="cm">mon_projet/</span>
+├── <span class="fn">pyproject.toml</span>      <span class="cm"># configuration centrale (dépendances, outils)</span>
+├── <span class="fn">README.md</span>
+├── <span class="fn">src/</span>
+│   └── <span class="fn">mon_projet/</span>
+│       ├── <span class="fn">__init__.py</span>
+│       └── <span class="fn">core.py</span>
+├── <span class="fn">tests/</span>
+│   └── <span class="fn">test_core.py</span>
+└── <span class="fn">.gitignore</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>🔧 La chaîne d'outils moderne</h3>
+    <ul class="clean">
+      <li><b>Gestion des dépendances</b> : <code class="inline">uv</code> ou <code class="inline">poetry</code> — environnements virtuels et lockfile</li>
+      <li><b>Formatage</b> : <code class="inline">ruff format</code> ou <code class="inline">black</code> — un style uniforme, zéro débat</li>
+      <li><b>Lint</b> : <code class="inline">ruff check</code> ou <code class="inline">flake8</code> — détecte les pièges classiques</li>
+      <li><b>Typage</b> : <code class="inline">mypy</code> ou <code class="inline">pyright</code> — vérifie les annotations</li>
+      <li><b>Tests</b> : <code class="inline">pytest</code> — simple, lisible, avec fixtures</li>
+      <li><b>Hooks git</b> : <code class="inline">pre-commit</code> — tout vérifie automatiquement à chaque commit</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>🧪 Un bon test avec pytest</h3>
+<pre><span class="kw">import</span> pytest
+<span class="kw">from</span> mon_projet.core <span class="kw">import</span> moyenne
+
+<span class="kw">def</span> <span class="fn">test_moyenne_simple</span>():
+    <span class="kw">assert</span> moyenne([<span class="num">10</span>, <span class="num">20</span>]) == <span class="num">15</span>
+
+<span class="kw">def</span> <span class="fn">test_moyenne_vide</span>():
+    <span class="kw">with</span> pytest.raises(<span class="fn">ValueError</span>):
+        moyenne([])</pre>
+    <p class="toggle-hint">Un test par comportement, des noms explicites, on teste aussi les cas limites.</p>
+  </div>
+
+  <div class="card">
+    <h3>🧠 Le Zen de Python (PEP 20)</h3>
+    <p style="color:var(--muted)">Tapez <code class="inline">import this</code> dans un interpréteur… Quelques maximes :</p>
+    <ul class="clean">
+      <li><b>« Readability counts. »</b> — la lisibilité compte</li>
+      <li><b>« Explicit is better than implicit. »</b> — l'explicite vaut mieux que l'implicite</li>
+      <li><b>« Simple is better than complex. »</b> — le simple vaut mieux que le complexe</li>
+      <li><b>« Errors should never pass silently. »</b> — les erreurs ne doivent jamais passer en silence</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== ONGLET QUIZ ==================== -->
+<section id="quiz" class="tab">
+  <h2>Testez vos connaissances</h2>
+  <p class="lead">Une seule bonne réponse par question. Le score se met à jour en direct.</p>
+  <div id="score">Score : <span id="score-val">0</span> / <span id="score-total">0</span></div>
+  <div id="quiz-container" style="margin-top:1.5rem"></div>
+</section>
+
+</main>
+
+<footer>
+  Guide interactif — bonnes pratiques Python · PEP 8, PEP 20, PEP 257 · Fait avec ❤️
+</footer>
+
+<script>
+// ---------- Navigation par onglets ----------
+document.querySelectorAll("nav button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("section.tab").forEach(s => s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+});
+
+// ---------- Quiz ----------
+const questions = [
+  {
+    q: "Quelle convention de nommage pour une fonction ?",
+    choices: ["MaFonction", "maFonction", "ma_fonction", "MA_FONCTION"],
+    answer: 2,
+    explain: "PEP 8 : les fonctions et variables utilisent le snake_case (minuscules + underscores)."
+  },
+  {
+    q: "Comment tester si une liste est non vide ?",
+    choices: ["if len(lst) > 0:", "if lst:", "if lst != []:", "if not lst is empty:"],
+    answer: 1,
+    explain: "Une séquence vide est « fausse » en Python : `if lst:` est l'idiome recommandé."
+  },
+  {
+    q: "Quelle est la bonne façon de comparer à None ?",
+    choices: ["x == None", "x is None", "x equals None", "not x"],
+    answer: 1,
+    explain: "None est un singleton : on compare l'identité avec `is` / `is not`, jamais `==`."
+  },
+  {
+    q: "Quel outil vérifie les annotations de type ?",
+    choices: ["black", "pytest", "mypy", "pip"],
+    answer: 2,
+    explain: "mypy (ou pyright) fait l'analyse statique des annotations de type. black formate, pytest teste."
+  },
+  {
+    q: "Que faut-il éviter avec except ?",
+    choices: [
+      "Attraper une exception précise",
+      "Utiliser `except:` nu suivi de `pass`",
+      "Logger l'erreur",
+      "Relancer l'exception"
+    ],
+    answer: 1,
+    explain: "Un `except:` nu attrape tout (même KeyboardInterrupt) et `pass` masque le problème silencieusement."
+  },
+  {
+    q: "Combien d'espaces pour l'indentation selon la PEP 8 ?",
+    choices: ["2", "4", "8", "Une tabulation"],
+    answer: 1,
+    explain: "4 espaces par niveau d'indentation, sans mélanger tabulations et espaces."
+  }
+];
+
+const container = document.getElementById("quiz-container");
+const scoreVal = document.getElementById("score-val");
+const scoreTotal = document.getElementById("score-total");
+let score = 0;
+scoreTotal.textContent = questions.length;
+
+questions.forEach((item, qi) => {
+  const div = document.createElement("div");
+  div.className = "quiz-q card";
+  const qEl = document.createElement("div");
+  qEl.className = "question";
+  qEl.textContent = `${qi + 1}. ${item.q}`;
+  div.appendChild(qEl);
+
+  item.choices.forEach((choice, ci) => {
+    const btn = document.createElement("button");
+    btn.textContent = choice;
+    btn.addEventListener("click", () => {
+      if (div.dataset.done) return;
+      div.dataset.done = "true";
+      const buttons = div.querySelectorAll("button");
+      buttons[item.answer].classList.add("correct");
+      if (ci !== item.answer) {
+        btn.classList.add("wrong");
+      } else {
+        score++;
+        scoreVal.textContent = score;
+      }
+      buttons.forEach(b => b.style.cursor = "default");
+      div.querySelector(".explain").classList.add("show");
+    });
+    div.appendChild(btn);
+  });
+
+  const ex = document.createElement("div");
+  ex.className = "explain";
+  ex.textContent = "💡 " + item.explain;
+  div.appendChild(ex);
+  container.appendChild(div);
+});
+</script>
+</body>
+</html>
