@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Les sous-requêtes SQL</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --accent: #38bdf8;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  header {
+    padding: 3rem 1.5rem 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 2.1rem; margin-bottom: .5rem; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); max-width: 680px; margin: 0 auto; }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .5rem;
+    padding: 1rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  nav button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem 1.1rem;
+    font-size: .95rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  nav button:hover { color: var(--text); border-color: var(--accent); }
+  nav button.active { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  section.tab { display: none; animation: fadeIn .3s; }
+  section.tab.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  h2 { color: var(--accent); margin-bottom: 1rem; font-size: 1.5rem; }
+  h3 { margin: 1.5rem 0 .75rem; }
+  p.lead { color: var(--muted); margin-bottom: 1.5rem; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  pre {
+    background: #0b1120;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: .88rem;
+    line-height: 1.55;
+    margin: .75rem 0;
+  }
+  .kw { color: #c084fc; font-weight: 600; } .str { color: #fbbf24; }
+  .fn { color: #38bdf8; } .cm { color: #64748b; font-style: italic; }
+  .num { color: #f472b6; } .sub { color: #4ade80; font-weight: 600; }
+  code.inline {
+    background: #0b1120;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: .1rem .4rem;
+    font-family: Consolas, monospace;
+    font-size: .85em;
+    color: #fbbf24;
+  }
+
+  /* Schéma / explorateur */
+  .schema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .schema-grid { grid-template-columns: 1fr; } }
+  table.data {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Consolas, monospace;
+    font-size: .85rem;
+    margin-top: .75rem;
+  }
+  table.data th, table.data td {
+    border: 1px solid var(--border);
+    padding: .45rem .7rem;
+    text-align: left;
+  }
+  table.data th { background: #0b1120; color: var(--accent); }
+  table.data tr.hl td { background: rgba(74,222,128,.15); }
+
+  /* Visualiseur pas-à-pas */
+  .step-controls { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .step-controls button {
+    background: var(--accent);
+    color: #0f172a;
+    border: none;
+    border-radius: 8px;
+    padding: .5rem 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .step-controls button:disabled { opacity: .35; cursor: not-allowed; }
+  .step-controls button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  #step-text {
+    background: rgba(56,189,248,.1);
+    border-left: 4px solid var(--accent);
+    padding: .9rem 1.1rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1rem;
+    min-height: 3.2rem;
+  }
+  #step-text b { color: var(--accent); }
+  #viz-code .cur { background: rgba(56,189,248,.25); border-radius: 4px; }
+  #viz-code .done { background: rgba(74,222,128,.15); border-radius: 4px; }
+  .pill {
+    display: inline-block;
+    background: rgba(56,189,248,.15);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: .1rem .7rem;
+    font-size: .8rem;
+    margin-left: .5rem;
+  }
+
+  /* Accordéon exemples */
+  details { margin-bottom: 1rem; }
+  details summary {
+    cursor: pointer;
+    padding: .8rem 1rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-weight: 600;
+    list-style: none;
+  }
+  details summary::before { content: "▸ "; color: var(--accent); }
+  details[open] summary::before { content: "▾ "; }
+  details .card { margin-top: .75rem; }
+
+  .tip {
+    border-left: 4px solid var(--warn);
+    background: rgba(251,191,36,.08);
+    padding: .9rem 1.1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+  }
+  .tip b { color: var(--warn); }
+
+  ul.clean { list-style: none; }
+  ul.clean li { padding: .5rem 0 .5rem 1.8rem; position: relative; border-bottom: 1px dashed var(--border); }
+  ul.clean li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 700; }
+  ul.clean li b { color: var(--accent); }
+
+  footer { text-align: center; color: var(--muted); padding: 2rem; border-top: 1px solid var(--border); font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗄️ Les <span>sous-requêtes</span> SQL</h1>
+  <p>Une requête dans une requête ! Comprenez pas à pas, avec des exemples visuels, comment ça marche — pensé pour les débutants.</p>
+</header>
+
+<nav>
+  <button data-tab="intro" class="active">💡 C'est quoi ?</button>
+  <button data-tab="schema">📊 Données d'exemple</button>
+  <button data-tab="step">🔍 Pas à pas</button>
+  <button data-tab="types">📦 Types de sous-requêtes</button>
+  <button data-tab="erreurs">⚠️ Pièges &amp; conseils</button>
+</nav>
+
+<main>
+
+<!-- ==================== INTRO ==================== -->
+<section id="intro" class="tab active">
+  <h2>Une requête dans une requête</h2>
+  <p class="lead">Une <b>sous-requête</b> (ou requête imbriquée) est une requête SQL placée <i>à l'intérieur</i> d'une autre requête, entre parenthèses. Son résultat est utilisé par la requête principale.</p>
+
+  <div class="card">
+    <h3>🧠 L'analogie du détective</h3>
+    <p>Pour trouver « les clients qui ont dépensé plus de 500 € », le détective procède en deux temps :</p>
+    <ul class="clean">
+      <li><b>Étape 1 (la sous-requête)</b> : « Trouve-moi le total des achats de chaque client »</li>
+      <li><b>Étape 2 (la requête principale)</b> : « Parmi ces résultats, garde ceux qui dépassent 500 € »</li>
+    </ul>
+    <p style="margin-top:.75rem">SQL peut faire les deux en une seule commande : la sous-requête s'exécute <b>d'abord</b>, son résultat nourrit la requête principale.</p>
+  </div>
+
+  <div class="card">
+    <h3>👀 À quoi ça ressemble ?</h3>
+    <pre><span class="cm">-- La sous-requête (en vert) est TOUJOURS entre parenthèses</span>
+<span class="kw">SELECT</span> nom
+<span class="kw">FROM</span> clients
+<span class="kw">WHERE</span> id <span class="kw">IN</span> <span class="sub">(</span><span class="kw">SELECT</span> client_id <span class="kw">FROM</span> commandes <span class="kw">WHERE</span> total &gt; <span class="num">500</span><span class="sub">)</span>;
+
+<span class="cm">-- 👆 La requête principale  👆 La sous-requête, exécutée en premier</span></pre>
+    <p>On lit : « Donne-moi les noms des clients <b>qui sont dans</b> la liste des client_id des commandes de plus de 500 €. »</p>
+  </div>
+
+  <div class="card">
+    <h3>📌 Les 3 règles d'or</h3>
+    <ul class="clean">
+      <li>Une sous-requête est <b>toujours entre parenthèses</b> <code class="inline">( ... )</code></li>
+      <li>Elle s'exécute <b>avant</b> la requête principale (sauf cas corrélés, voir l'onglet « Types »)</li>
+      <li>Elle peut apparaître dans <code class="inline">SELECT</code>, <code class="inline">FROM</code>, <code class="inline">WHERE</code> ou <code class="inline">HAVING</code></li>
+    </ul>
+  </div>
+
+  <div class="tip">
+    <b>Astuce de lecture :</b> quand vous voyez une requête imbriquée, lisez-la <b>de l'intérieur vers l'extérieur</b> — commencez par la parenthèse la plus profonde !
+  </div>
+</section>
+
+<!-- ==================== SCHEMA ==================== -->
+<section id="schema" class="tab">
+  <h2>Les données d'exemple</h2>
+  <p class="lead">Tous les exemples de cette page utilisent deux petites tables : <code class="inline">clients</code> et <code class="inline">commandes</code>. Survolez/cliquez une ligne pour la surligner.</p>
+
+  <div class="schema-grid">
+    <div class="card">
+      <h3>Table <code class="inline">clients</code></h3>
+      <table class="data" id="t-clients">
+        <thead><tr><th>id</th><th>nom</th><th>ville</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Alice</td><td>Paris</td></tr>
+          <tr><td>2</td><td>Bruno</td><td>Lyon</td></tr>
+          <tr><td>3</td><td>Chloé</td><td>Marseille</td></tr>
+          <tr><td>4</td><td>David</td><td>Paris</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Table <code class="inline">commandes</code></h3>
+      <table class="data" id="t-commandes">
+        <thead><tr><th>id</th><th>client_id</th><th>produit</th><th>total</th></tr></thead>
+        <tbody>
+          <tr><td>101</td><td>1</td><td>Ordinateur</td><td>900</td></tr>
+          <tr><td>102</td><td>2</td><td>Livre</td><td>15</td></tr>
+          <tr><td>103</td><td>1</td><td>Souris</td><td>25</td></tr>
+          <tr><td>104</td><td>3</td><td>Écran</td><td>300</td></tr>
+          <tr><td>105</td><td>3</td><td>Clavier</td><td>80</td></tr>
+          <tr><td>106</td><td>4</td><td>Tablette</td><td>600</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔗 Le lien entre les deux tables</h3>
+    <p>La colonne <code class="inline">commandes.client_id</code> fait référence à <code class="inline">clients.id</code>. C'est cette relation qui rend les sous-requêtes utiles : on peut poser des questions qui traversent les deux tables.</p>
+    <p style="margin-top:.75rem">Exemples de questions que l'on va savoir répondre :</p>
+    <ul class="clean">
+      <li>« Qui a passé une commande de plus de 500 € ? »</li>
+      <li>« Qui n'a <b>jamais</b> commandé ? »</li>
+      <li>« Quelles villes ont une moyenne de commande supérieure à la moyenne générale ? »</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== PAS A PAS ==================== -->
+<section id="step" class="tab">
+  <h2>Dérouler une sous-requête pas à pas</h2>
+  <p class="lead">Notre objectif : <b>trouver les noms des clients qui ont passé une commande de plus de 500 €</b>. Cliquez sur « Suivant » pour voir SQL travailler, étape par étape.</p>
+
+  <div class="step-controls">
+    <button id="btn-prev" disabled>← Précédent</button>
+    <button id="btn-next">Suivant →</button>
+    <button id="btn-reset" class="ghost">↺ Recommencer</button>
+    <span class="pill" id="step-counter">Étape 1 / 5</span>
+  </div>
+
+  <div id="step-text"></div>
+
+  <div class="card">
+    <h3>La requête</h3>
+    <pre id="viz-code"><span class="kw">SELECT</span> nom                     <span class="cm">-- ① </span><span id="l1"></span>
+<span class="kw">FROM</span> clients
+<span class="kw">WHERE</span> id <span class="kw">IN</span> <span class="sub">(</span><span class="kw">SELECT</span> client_id  <span class="cm">-- ② </span><span id="l2"></span>
+          <span class="kw">FROM</span> commandes
+          <span class="kw">WHERE</span> total &gt; <span class="num">500</span><span class="sub">)</span>;</pre>
+  </div>
+
+  <div class="schema-grid" id="step-tables">
+    <div class="card" id="viz-left">
+      <h3>Table <code class="inline">commandes</code> <span class="pill" id="pill-left"></span></h3>
+      <table class="data" id="viz-cmd">
+        <thead><tr><th>id</th><th>client_id</th><th>produit</th><th>total</th></tr></thead>
+        <tbody>
+          <tr><td>101</td><td>1</td><td>Ordinateur</td><td>900</td></tr>
+          <tr><td>102</td><td>2</td><td>Livre</td><td>15</td></tr>
+          <tr><td>103</td><td>1</td><td>Souris</td><td>25</td></tr>
+          <tr><td>104</td><td>3</td><td>Écran</td><td>300</td></tr>
+          <tr><td>105</td><td>3</td><td>Clavier</td><td>80</td></tr>
+          <tr><td>106</td><td>4</td><td>Tablette</td><td>600</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card" id="viz-right">
+      <h3>Table <code class="inline">clients</code> <span class="pill" id="pill-right"></span></h3>
+      <table class="data" id="viz-cli">
+        <thead><tr><th>id</th><th>nom</th><th>ville</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Alice</td><td>Paris</td></tr>
+          <tr><td>2</td><td>Bruno</td><td>Lyon</td></tr>
+          <tr><td>3</td><td>Chloé</td><td>Marseille</td></tr>
+          <tr><td>4</td><td>David</td><td>Paris</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Résultat final</h3>
+    <table class="data" id="viz-result" style="max-width:250px">
+      <thead><tr><th>nom</th></tr></thead>
+      <tbody><tr><td style="color:var(--muted)">—</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== TYPES ==================== -->
+<section id="types" class="tab">
+  <h2>Les grands types de sous-requêtes</h2>
+  <p class="lead">Cliquez sur chaque type pour découvrir sa syntaxe et un exemple commenté sur nos tables.</p>
+
+  <details>
+    <summary>1. Sous-requête avec IN <span class="pill">la plus courante</span></summary>
+    <div class="card">
+      <p><code class="inline">IN</code> teste si une valeur <b>appartient à la liste</b> renvoyée par la sous-requête. La sous-requête doit retourner <b>une seule colonne</b>.</p>
+      <pre><span class="cm">-- Les clients qui n'ont jamais commandé (NOT IN !)</span>
+<span class="kw">SELECT</span> nom
+<span class="kw">FROM</span> clients
+<span class="kw">WHERE</span> id <span class="kw">NOT IN</span> <span class="sub">(</span><span class="kw">SELECT</span> client_id <span class="kw">FROM</span> commandes<span class="sub">)</span>;
+
+<span class="cm">-- Résultat : Bruno (id 2 est le seul absent des commandes)</span></pre>
+    </div>
+  </details>
+
+  <details>
+    <summary>2. Sous-requête avec un opérateur de comparaison (=, &gt;, &lt;…)</summary>
+    <div class="card">
+      <p>Quand la sous-requête renvoie <b>une seule valeur</b> (une ligne, une colonne), on peut la comparer directement.</p>
+      <pre><span class="cm">-- Les commandes supérieures à la commande moyenne</span>
+<span class="kw">SELECT</span> produit, total
+<span class="kw">FROM</span> commandes
+<span class="kw">WHERE</span> total &gt; <span class="sub">(</span><span class="kw">SELECT AVG</span>(total) <span class="kw">FROM</span> commandes<span class="sub">)</span>;
+
+<span class="cm">-- AVG(total) = 320 → gardé : Ordinateur (900), Écran... non (300), Tablette (600)</span></pre>
+      <div class="tip"><b>Attention :</b> si la sous-requête renvoie plusieurs lignes, <code class="inline">=</code> provoque une erreur. Utilisez <code class="inline">IN</code>, ou <code class="inline">ANY</code>/<code class="inline">ALL</code>.</div>
+    </div>
+  </details>
+
+  <details>
+    <summary>3. Sous-requête dans FROM (table dérivée)</summary>
+    <div class="card">
+      <p>Le résultat d'une sous-requête devient une <b>table temporaire</b> que l'on interroge. On doit lui donner un <b>alias</b> (ici <code class="inline">stats</code>).</p>
+      <pre><span class="kw">SELECT</span> stats.client_id, stats.total_client
+<span class="kw">FROM</span> <span class="sub">(</span><span class="kw">SELECT</span> client_id, <span class="kw">SUM</span>(total) <span class="kw">AS</span> total_client
+      <span class="kw">FROM</span> commandes
+      <span class="kw">GROUP BY</span> client_id<span class="sub">)</span> <span class="kw">AS</span> stats
+<span class="kw">WHERE</span> stats.total_client &gt; <span class="num">500</span>;
+
+<span class="cm">-- stats = table temporaire : | client_id | total_client |</span>
+<span class="cm">--                        | 1         | 925          |</span>
+<span class="cm">--                        | 3         | 380          | ...</span>
+<span class="cm">-- Résultat : client 1 (925) et client 4 (600)</span></pre>
+      <p>Très pratique dès qu'il faut <b>agréger puis filtrer sur l'agrégat</b> (équivalent de <code class="inline">HAVING</code>).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>4. Sous-requête corrélée <span class="pill">niveau +1</span></summary>
+    <div class="card">
+      <p>La sous-requête fait référence à la <b>ligne courante</b> de la requête principale : elle est réévaluée pour <b>chaque ligne</b>. On la reconnaît car la table interne mentionne une colonne de la table externe.</p>
+      <pre><span class="cm">-- Les clients dont UNE commande dépasse 500 €</span>
+<span class="kw">SELECT DISTINCT</span> c.nom
+<span class="kw">FROM</span> clients c
+<span class="kw">WHERE</span> <span class="num">500</span> &lt; <span class="sub">(</span><span class="kw">SELECT MAX</span>(total)
+               <span class="kw">FROM</span> commandes o
+               <span class="kw">WHERE</span> o.client_id = <span class="fn">c.id</span><span class="sub">)</span>;
+                <span class="cm">-- 👆 c.id : colonne de la requête EXTERNE → corrélée !</span></pre>
+      <p>Pour chaque client, SQL calcule le max de <i>ses</i> commandes, puis compare à 500.</p>
+      <div class="tip"><b>Performance :</b> les sous-requêtes corrélées peuvent être lentes sur de grosses tables (réévaluées ligne par ligne). Un <code class="inline">JOIN</code> ou <code class="inline">EXISTS</code> est souvent plus efficace.</div>
+    </div>
+  </details>
+
+  <details>
+    <summary>5. EXISTS / NOT EXISTS <span class="pill">alternative à IN</span></summary>
+    <div class="card">
+      <p><code class="inline">EXISTS</code> vérifie simplement que la sous-requête <b>renvoie au moins une ligne</b> — peu importe les colonnes.</p>
+      <pre><span class="cm">-- Les clients qui ont au moins une commande</span>
+<span class="kw">SELECT</span> nom
+<span class="kw">FROM</span> clients c
+<span class="kw">WHERE EXISTS</span> <span class="sub">(</span><span class="kw">SELECT</span> <span class="num">1</span>
+              <span class="kw">FROM</span> commandes o
+              <span class="kw">WHERE</span> o.client_id = c.id<span class="sub">)</span>;
+
+<span class="cm">-- NOT EXISTS = les clients sans aucune commande → Bruno</span></pre>
+      <p><code class="inline">SELECT 1</code> est une convention : on se fiche du contenu, seul « est-ce vide ? » compte. C'est aussi la manière la plus sûre d'écrire « qui n'a jamais… ».</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>6. Sous-requête dans SELECT (colonne calculée)</summary>
+    <div class="card">
+      <p>Une sous-requête peut produire une <b>colonne du résultat</b>, à condition de renvoyer une seule valeur par ligne.</p>
+      <pre><span class="kw">SELECT</span> c.nom,
+       <span class="sub">(</span><span class="kw">SELECT COUNT</span>(*) <span class="kw">FROM</span> commandes o
+        <span class="kw">WHERE</span> o.client_id = c.id<span class="sub">)</span> <span class="kw">AS</span> nb_commandes
+<span class="kw">FROM</span> clients c;
+
+<span class="cm">-- nom    | nb_commandes</span>
+<span class="cm">-- Alice  | 2</span>
+<span class="cm">-- Bruno  | 0</span>
+<span class="cm">-- Chloé  | 2</span>
+<span class="cm">-- David  | 1</span></pre>
+    </div>
+  </details>
+
+  <div class="card">
+    <h3>🤔 Sous-requête ou JOIN ?</h3>
+    <p>Beaucoup de sous-requêtes peuvent s'écrire avec un <code class="inline">JOIN</code>. Les deux sont corrects ; en général :</p>
+    <ul class="clean">
+      <li><b>JOIN</b> : quand on a besoin des colonnes des deux tables dans le résultat</li>
+      <li><b>Sous-requête</b> : quand on pose une question « ensembliste » (existe-t-il ? est-il dans la liste ? plus grand que la moyenne ?)</li>
+      <li>Sur de grosses tables, <code class="inline">EXISTS</code>/<code class="inline">JOIN</code> sont souvent plus rapides que <code class="inline">IN</code> corrélé</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== PIEGES ==================== -->
+<section id="erreurs" class="tab">
+  <h2>Pièges classiques &amp; conseils</h2>
+
+  <div class="card">
+    <h3>⚠️ Piège 1 : plusieurs colonnes avec IN</h3>
+    <pre><span class="cm">-- ❌ Erreur : la sous-requête renvoie 2 colonnes</span>
+<span class="kw">WHERE</span> id <span class="kw">IN</span> <span class="sub">(</span><span class="kw">SELECT</span> client_id, total <span class="kw">FROM</span> commandes<span class="sub">)</span>;
+
+<span class="cm">-- ✅ Correct : une seule colonne</span>
+<span class="kw">WHERE</span> id <span class="kw">IN</span> <span class="sub">(</span><span class="kw">SELECT</span> client_id <span class="kw">FROM</span> commandes<span class="sub">)</span>;</pre>
+  </div>
+
+  <div class="card">
+    <h3>⚠️ Piège 2 : NOT IN et les valeurs NULL</h3>
+    <p>Si la sous-requête contient un <code class="inline">NULL</code>, <code class="inline">NOT IN</code> ne renvoie… <b>aucune ligne</b> ! (toute comparaison avec NULL est « inconnue »).</p>
+    <pre><span class="cm">-- ❌ Dangereux si client_id peut être NULL</span>
+<span class="kw">WHERE</span> id <span class="kw">NOT IN</span> <span class="sub">(</span><span class="kw">SELECT</span> client_id <span class="kw">FROM</span> commandes<span class="sub">)</span>;
+
+<span class="cm">-- ✅ Sûr et souvent plus rapide</span>
+<span class="kw">WHERE NOT EXISTS</span> <span class="sub">(</span><span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> commandes o
+              <span class="kw">WHERE</span> o.client_id = clients.id<span class="sub">)</span>;</pre>
+  </div>
+
+  <div class="card">
+    <h3>⚠️ Piège 3 : oublier l'alias avec une table dérivée</h3>
+    <pre><span class="cm">-- ❌ Erreur : « every derived table must have its own alias »</span>
+<span class="kw">FROM</span> <span class="sub">(</span><span class="kw">SELECT</span> ... <span class="kw">GROUP BY</span> client_id<span class="sub">)</span>
+
+<span class="cm">-- ✅ Toujours nommer la table temporaire</span>
+<span class="kw">FROM</span> <span class="sub">(</span><span class="kw">SELECT</span> ... <span class="kw">GROUP BY</span> client_id<span class="sub">)</span> <span class="kw">AS</span> stats</pre>
+  </div>
+
+  <div class="card">
+    <h3>💡 Conseils de pro pour bien débuter</h3>
+    <ul class="clean">
+      <li><b>Testez la sous-requête seule</b> d'abord : exécutez-la, regardez son résultat, puis intégrez-la</li>
+      <li><b>Lisez de l'intérieur vers l'extérieur</b> : commencez par la parenthèse la plus profonde</li>
+      <li><b>Indentez</b> vos sous-requêtes — la lisibilité sauve des heures de débogage</li>
+      <li>Une sous-requête peut contenir <b>une autre sous-requête</b> (imbrication multiple), mais au-delà de 2–3 niveaux, préférez des CTE (<code class="inline">WITH</code>)</li>
+      <li>Le mot-clé <code class="inline">WITH</code> (CTE) permet de nommer une sous-requête et de la rendre lisible : <code class="inline">WITH stats AS (SELECT ...) SELECT ... FROM stats</code></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>🧭 Récapitulatif express</h3>
+    <pre><span class="kw">IN</span> <span class="sub">(SELECT ...)</span>          <span class="cm">→ appartient à une liste (1 colonne)</span>
+<span class="kw">NOT IN</span> <span class="sub">(SELECT ...)</span>      <span class="cm">→ absent d'une liste (gare au NULL !)</span>
+<span class="kw">&gt;</span> / <span class="kw">=</span> <span class="sub">(SELECT ...)</span>        <span class="cm">→ comparaison (1 seule valeur)</span>
+<span class="kw">FROM</span> <span class="sub">(SELECT ...)</span> <span class="kw">AS</span> t   <span class="cm">→ table dérivée (alias obligatoire)</span>
+<span class="kw">EXISTS</span> <span class="sub">(SELECT ...)</span>       <span class="cm">→ au moins une ligne ? (souvent corrélée)</span>
+<span class="kw">SELECT</span> <span class="sub">(SELECT ...)</span>       <span class="cm">→ colonne calculée (1 valeur par ligne)</span></pre>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Les sous-requêtes SQL — guide interactif pour débutants · Tables d'exemple : clients &amp; commandes
+</footer>
+
+<script>
+// ---------- Navigation ----------
+document.querySelectorAll("nav button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("section.tab").forEach(s => s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+});
+
+// ---------- Surlignage des lignes de tables (onglet données) ----------
+document.querySelectorAll("table.data tbody tr").forEach(tr => {
+  tr.addEventListener("click", () => {
+    const table = tr.closest("table");
+    table.querySelectorAll("tr").forEach(r => r.classList.remove("hl"));
+    tr.classList.add("hl");
+  });
+});
+
+// ---------- Visualiseur pas-à-pas ----------
+const steps = [
+  {
+    text: "<b>Étape 1 — Lire la requête.</b> Objectif : « les noms des clients qui ont passé une commande de plus de 500 € ». On part de la requête complète, et on va dérouler son exécution. Cliquez sur Suivant !",
+    hlCode: null, cmdRows: [], cliRows: [], result: null,
+    pillL: "", pillR: ""
+  },
+  {
+    text: "<b>Étape 2 — Exécuter la sous-requête d'abord.</b> SQL commence toujours par l'intérieur : <code>SELECT client_id FROM commandes WHERE total &gt; 500</code>. On garde les lignes dont le total dépasse 500 (surlignées en vert).",
+    hlCode: 2, cmdRows: [0, 5], cliRows: [],
+    pillL: "filtre : total > 500", pillR: ""
+  },
+  {
+    text: "<b>Étape 3 — Le résultat de la sous-requête.</b> Elle renvoie la liste <code>{1, 4}</code> : les identifiants des clients ayant une grosse commande (Alice via l'ordinateur à 900 €, David via la tablette à 600 €).",
+    hlCode: 2, cmdRows: [0, 5], cliRows: [],
+    pillL: "résultat : {1, 4}", pillR: ""
+  },
+  {
+    text: "<b>Étape 4 — La requête principale utilise cette liste.</b> <code>WHERE id IN (1, 4)</code> : on garde les clients dont l'id est dans la liste {1, 4} — surlignés en vert dans la table clients.",
+    hlCode: 1, cmdRows: [0, 5], cliRows: [0, 3],
+    pillL: "liste : {1, 4}", pillR: "filtre : id IN (1, 4)"
+  },
+  {
+    text: "<b>Étape 5 — Résultat final !</b> Il ne reste qu'à afficher la colonne <code>nom</code> : Alice et David ont passé au moins une commande de plus de 500 €. 🎉",
+    hlCode: 1, cmdRows: [0, 5], cliRows: [0, 3],
+    result: ["Alice", "David"],
+    pillL: "liste : {1, 4}", pillR: "gardés : 1, 4"
+  }
+];
+
+let cur = 0;
+const stepText = document.getElementById("step-text");
+const btnPrev = document.getElementById("btn-prev");
+const btnNext = document.getElementById("btn-next");
+const counter = document.getElementById("step-counter");
+const cmdTable = document.getElementById("viz-cmd");
+const cliTable = document.getElementById("viz-cli");
+const resultTable = document.getElementById("viz-result");
+const pillL = document.getElementById("pill-left");
+const pillR = document.getElementById("pill-right");
+
+function renderStep() {
+  const s = steps[cur];
+  stepText.innerHTML = s.text;
+  counter.textContent = `Étape ${cur + 1} / ${steps.length}`;
+  btnPrev.disabled = cur === 0;
+  btnNext.disabled = cur === steps.length - 1;
+
+  // Lignes surlignées
+  cmdTable.querySelectorAll("tbody tr").forEach((tr, i) =>
+    tr.classList.toggle("hl", s.cmdRows.includes(i)));
+  cliTable.querySelectorAll("tbody tr").forEach((tr, i) =>
+    tr.classList.toggle("hl", s.cliRows.includes(i)));
+
+  // Pills
+  pillL.textContent = s.pillL; pillL.style.display = s.pillL ? "" : "none";
+  pillR.textContent = s.pillR; pillR.style.display = s.pillR ? "" : "none";
+
+  // Résultat
+  const body = resultTable.querySelector("tbody");
+  if (s.result) {
+    body.innerHTML = s.result.map(n => `<tr><td>${n}</td></tr>`).join("");
+  } else {
+    body.innerHTML = '<tr><td style="color:var(--muted)">—</td></tr>';
+  }
+}
+
+btnNext.addEventListener("click", () => { if (cur < steps.length - 1) { cur++; renderStep(); } });
+btnPrev.addEventListener("click", () => { if (cur > 0) { cur--; renderStep(); } });
+document.getElementById("btn-reset").addEventListener("click", () => { cur = 0; renderStep(); });
+
+renderStep();
+</script>
+</body>
+</html>
